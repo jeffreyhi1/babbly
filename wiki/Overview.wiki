@@ -1,0 +1,29 @@
+#summary One-sentence summary of this page.
+
+
+= Introduction =
+
+Babbly uses sip in order to accomplish some sort of communication(either voip or im). It can(or should be able to) communicate with either another instance of itself or any other sip compliant client.
+
+
+= What works =
+
+Let's put it the short way: NOT MUCH. However here is a list of the currently working features:
+  * User data input with expression check validation on the data
+  * Initialization of the SIP Stack and making use of it
+   * for the handshake requests/responses between user and a sip registrar/proxy:
+   * for the handshake requests/responses between users
+   * Possible requests (as defined in rfc 3621) are:
+    * REGISTER
+    * OPTIONS
+    * INVITE
+    * CANCEL
+    * BYE
+    * ACK
+   * Possible responses are:
+    * Provisional (1xx): Request received and being processed (e.g 180 Ringing).
+    * Success (2xx): The action was successfully received, understood, and accepted (e.g. 200 OK).
+    * Redirection (3xx): Further action needs to be taken (typically by sender) to complete the request(e.g 301 Moved Permanently).
+    * Client Error (4xx): The request contains bad syntax or cannot be fulfilled at the server (e.g. 401 Unauthorized).
+    * Server Error (5xx): The server failed to fulfill an apparently valid request.
+    * Global Failure (6xx): The request cannot be fulfilled at any server.
