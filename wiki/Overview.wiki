@@ -48,4 +48,4 @@ However here is a list of the currently working features:
    * Extending the graphical user interface to offer more and more features as well as to be more pleasing and user friendly, whereby not having to sacrifice a drop of usability!
    * more, more and guess what - even more!
 
-*==Please feel free to fire issues/bugs as well as feature requests!==*
+==*Please feel free to fire issues/bugs as well as feature requests!*==
