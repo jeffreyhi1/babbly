@@ -41,4 +41,11 @@ However here is a list of the currently working features:
 
    * A user should be able to stay online after successful authentication in a proxy/registrar.
    * A nice feature would be the possibility to implement the so-called PRESENCE feature (other people can see when you are online and vice versa)
-   * 
+   * Instant Messaging or the ability to send and receive messages(follow the RFCs!)
+   * The ability to connect to another participant/client when not having a direct internet connection(e.g passive/private IP).
+   * The ability to establish a connection even when all ports on the firewall protecting the private network where the current client resides are closed and access to the internet is possible solely through HTTP Proxy
+   * Clear separation of the core functionality of the application from its frontend
+   * Extending the graphical user interface to offer more and more features as well as to be more pleasing and user friendly, whereby not having to sacrifice a drop of usability!
+   * more, more and guess what - even more!
+
+*==Please feel free to fire issues/bugs as well as feature requests!==*
