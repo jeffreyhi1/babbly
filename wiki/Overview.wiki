@@ -20,7 +20,7 @@ However here is a list of the currently working features:
 
 
 
-A quick memorizer of the SIP requests and responses available in SIP as a mechanism of a typical handshake between two users or between a user-proxy/registrar counterparts according to RFC 3621:
+*A quick memorizer of the SIP requests and responses available in SIP as a mechanism of a typical handshake between two users or between a user-proxy/registrar counterparts according to RFC 3621:*
    * Possible requests are:
     * REGISTER
     * OPTIONS
