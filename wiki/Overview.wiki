@@ -8,12 +8,20 @@ Babbly uses sip in order to accomplish some sort of communication(either voip or
 
 = What works =
 
-Let's put it the short way: NOT MUCH. However here is a list of the currently working features:
+Let's put it the short way: NOT MUCH. Basically you can log into your previously created sip account.
+However here is a list of the currently working features:
   * User data input with expression check validation on the data
-  * Initialization of the SIP Stack and making use of it
-   * for the handshake requests/responses between user and a sip registrar/proxy:
-   * for the handshake requests/responses between users
-   * Possible requests (as defined in rfc 3621) are:
+  * User authentication and authorization to a registrar(respectively proxy/registrar)
+  * The Digest algorithm for HTTP Authentication (the Basic algorithm is not used since it exposes the user credentials to attackers)
+  * Initialization of the SIP Stack and exposing its interfaces in a wrapper-similar fashion with the help of the SipManager class.
+  * Logging of system messages by using log4j(DEBUG,INFO, etc) again in a wrapper similar fashion. (Look at the AppLog class)
+  * Basic STUN functionality. Although this feature isn't enabled yet(tests pending!)
+  * A threads-aware graphical Swing user interface written with the MVC design paradigm in mind. It is important to note that it still lacks on many important features and is to be enhanced as the project grows.
+
+
+
+A quick memorizer of the SIP requests and responses available in SIP as a mechanism of a typical handshake between two users or between a user-proxy/registrar counterparts according to RFC 3621:
+   * Possible requests are:
     * REGISTER
     * OPTIONS
     * INVITE
@@ -27,3 +35,10 @@ Let's put it the short way: NOT MUCH. However here is a list of the currently wo
     * Client Error (4xx): The request contains bad syntax or cannot be fulfilled at the server (e.g. 401 Unauthorized).
     * Server Error (5xx): The server failed to fulfill an apparently valid request.
     * Global Failure (6xx): The request cannot be fulfilled at any server.
+
+
+=What is to be implemented=
+
+   * A user should be able to stay online after successful authentication in a proxy/registrar.
+   * A nice feature would be the possibility to implement the so-called PRESENCE feature (other people can see when you are online and vice versa)
+   * 
