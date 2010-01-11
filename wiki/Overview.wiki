@@ -49,5 +49,5 @@ However here is a list of the currently working features:
    * more, more and guess what - even more!
 
 ----
-=NOTE=
+=_NOTE_=
 ==*_Some of the mentioned wannabe features are already added to the issues/feature requests list. However please feel free to fire issues/bugs as well as feature requests additionally at any time!_*==
