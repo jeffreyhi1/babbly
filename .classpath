@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="gogosip/|image/|sound/" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/JainSipApi1.2.jar" sourcepath="E:/Work/Java/Archive/Own_Projects/Studienarbeit/Studienarbeit/JAIN SIP/JAINSIP/JainSipSrcv1_1.zip"/>
+	<classpathentry kind="lib" path="lib/JainSipRi1.2.jar" sourcepath="E:/Studienarbeit/jain-sip/src"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.8.jar"/>
+	<classpathentry kind="lib" path="lib/nist-sdp-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/sip-sdp.jar"/>
+	<classpathentry kind="lib" path="lib/swing-layout-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/dnsjava-2.0.3.jar"/>
+	<classpathentry kind="lib" path="lib/Stun4J.jar"/>
+	<classpathentry kind="lib" path="lib/concurrent.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
