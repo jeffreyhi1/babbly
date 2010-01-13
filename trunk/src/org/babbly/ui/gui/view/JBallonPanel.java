@@ -1,4 +1,4 @@
-/*  babbly - lightweight instant messaging and VoIP client wirtten in Java. 
+/*  babbly - lightweight instant messaging and VoIP client written in Java. 
  * 
  *  Copyright (C) 2008  Georgi Dimitrov  mrj[at]abv[dot]bg
  *
