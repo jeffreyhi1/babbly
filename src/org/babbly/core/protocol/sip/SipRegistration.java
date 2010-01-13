@@ -270,34 +270,6 @@ public class SipRegistration {
 
 
 		request.addHeader(contactHeader);
-
-		
-		//--------------------------------------------------------
-		
-		String password = "dige0012:jzB6r35n";
-		String encodedPassword = Base64.encodeBytes(password.getBytes());
-		
-		ProxyAuthorizationHeader header = 
-			manager.createHTTPProxyAuthorizationHeader(null, null, null);
-		try {
-			header.setParameter("password", encodedPassword);
-		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			header.setUsername("dige0012");
-		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		request.addHeader(header);
-		
-		//( "Proxy-Authorization", encodedPassword);
-		
-		//--------------------------------------------------------
-
-		
 		
 		
 		//Transaction
