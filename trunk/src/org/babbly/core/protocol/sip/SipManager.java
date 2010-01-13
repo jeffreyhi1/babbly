@@ -64,7 +64,7 @@ import org.babbly.core.util.Base64;
 
 /**
  * This class is intended to be used as an Manager of the SIP components. It 
- * should make the underlying complexity of SIP transperent to the user,
+ * should make the underlying complexity of SIP transparent to the user,
  * and allow the user to create UAC and UAS easily without need of knowing
  * what's done 'behind the scene'.
  * 

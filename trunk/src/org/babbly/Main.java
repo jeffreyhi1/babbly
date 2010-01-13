@@ -38,7 +38,7 @@ public class Main {
 
 	public static void main(String [] args){
 		//new Main();
-		final Properties properties = SettingsLoader.loadProperties("2gogosip.properties");
+		final Properties properties = SettingsLoader.loadProperties("babbly.properties");
 		System.out.println("root path is: "+System.getProperty("user.dir"));
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -51,17 +51,6 @@ public class Main {
 		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
-		
-		
-//		System.getProperties().put("proxySet","true");
-//	    System.getProperties().put("proxyPort","8888");
-//	    System.getProperties().put("proxyHost","proxy.hs-karlsruhe.de");
-        System.setProperty("http.proxySet", "true");
-        System.setProperty("http.proxyHost", "http://proxy.hs-karlsruhe.de");
-        System.setProperty("http.proxyPort", "8888");
-
-		System.setProperty("http.proxyUserName", "dige0012");
-		System.setProperty("http.proxyPassword", "jzB6r35n");
 		
 		
 		
