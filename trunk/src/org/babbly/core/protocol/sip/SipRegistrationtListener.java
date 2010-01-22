@@ -100,7 +100,12 @@ public class SipRegistrationtListener implements SipListener{
 
 			int expirationInterval = 0;
 
-			ExpiresHeader expiresHeader = request.getExpires();
+			//------------------------------------------------------------------
+			//ExpiresHeader expiresHeader = request.getExpires();
+			ExpiresHeader expiresHeader = response.getExpires();
+			request.setExpires(expiresHeader);
+			//------------------------------------------------------------------
+			
 			ContactHeader contactHeader = (ContactHeader) request
 			.getHeader(ContactHeader.NAME);
 

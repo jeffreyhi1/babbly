@@ -22,7 +22,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-import org.babbly.core.util.Options;
+import org.babbly.ui.gui.settings.Options;
 import org.babbly.ui.gui.view.OptionsWindow;
 
 

@@ -32,6 +32,8 @@ public class RegistrationScheduler{
 	
 	public void scheduleRegister(long time){
 		// the timer works with milliseconds therefore multiply the time by 1000
+		System.out.println("KEEP_ALIVE time(ms) = "+(time*1000));
+		System.out.println("KEEP_ALIVE time(sec) = "+(time*1000)/60);
 		timer.schedule(new KeepRegistrationTask(), time*1000);
 	}
 	

@@ -40,8 +40,8 @@ import org.babbly.core.net.InetAddresResolver;
 import org.babbly.core.protocol.sip.SipManager;
 import org.babbly.core.protocol.sip.SipRegistration;
 import org.babbly.core.protocol.sip.SipUser;
-import org.babbly.core.util.Options;
-import org.babbly.core.util.SettingsLoader;
+import org.babbly.ui.gui.settings.Options;
+import org.babbly.ui.gui.settings.SettingsLoader;
 import org.babbly.ui.gui.view.OptionsWindow;
 import org.babbly.ui.gui.view.PrimaryWindow;
 
