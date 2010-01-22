@@ -207,6 +207,12 @@ public class PrimaryWindowController {
 						logoutMenuItemActionPerformed(e);
 					}
 				});
+		
+		
+		
+		primaryWindow.getLoginPane().getUsernameField().setText("mrjbg@iptel.org");
+		primaryWindow.getLoginPane().getPasswordField().setText("mrjbgiptel");
+		primaryWindow.getLoginPane().getLoginButton().setEnabled(true);
 
 	}
 
