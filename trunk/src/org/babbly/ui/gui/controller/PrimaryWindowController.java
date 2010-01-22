@@ -25,7 +25,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Properties;
 
 import javax.sip.InvalidArgumentException;
@@ -37,17 +36,14 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
+import org.babbly.core.net.InetAddresResolver;
 import org.babbly.core.protocol.sip.SipManager;
 import org.babbly.core.protocol.sip.SipRegistration;
 import org.babbly.core.protocol.sip.SipUser;
-import org.babbly.core.util.AddressResolver;
-import org.babbly.core.util.NetworkUtility;
 import org.babbly.core.util.Options;
 import org.babbly.core.util.SettingsLoader;
 import org.babbly.ui.gui.view.OptionsWindow;
 import org.babbly.ui.gui.view.PrimaryWindow;
-
-import sun.net.NetworkClient;
 
 /**
  * 
@@ -77,7 +73,7 @@ public class PrimaryWindowController {
 	/**
 	 * Creates a new instance of PrimaryWindowController from the given primary
 	 * window, which is going to be controlled and the given properties that
-	 * contain the settings of the application. Then initialises the controller
+	 * contain the settings of the application. Then initializes the controller
 	 * components.
 	 * 
 	 * @param primaryWindow
@@ -145,39 +141,23 @@ public class PrimaryWindowController {
 
 		int listenPort = options.getListenPort();
 		String protocol = options.getNetworkProtocol();
-		System.out.println("LocHost = " + AddressResolver.getlocalHostname());
-
-		// -------------------------------------
-
-		NetworkUtility n = new NetworkUtility();
-		InetAddress host = null;
-
-		try {
-			host = n.getLocalHost(InetAddress.getByName("google.com"));
-		} catch (UnknownHostException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
 		
-		if(host == null){
-			try {
-				host = InetAddress.getLocalHost();
-			} catch (UnknownHostException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		}
-
+		
+		// -------------------------------------
+		InetAddress host = InetAddresResolver.resolveInternetInterface();
 		// -------------------------------------
 
 		try {
 			manager = new SipManager("test", null);
+			System.out.println("LISTEN PORT: "+listenPort);
+			System.out.println("sip provider before: "+manager.getSipProvider());
 			manager.createSipProvider(host.getHostAddress(),
 					(listenPort > 0 ? listenPort : DEFAULT_LISTENING_PORT),
 					(protocol != null
 							&& (protocol.equalsIgnoreCase("TCP") || protocol
 									.equalsIgnoreCase("UDP")) ? protocol
 							: DEFAULT_TRANSPORT_PROTOCOL));
+			System.out.println("sip provider after: "+manager.getSipProvider());
 		} catch (PeerUnavailableException e1) {
 			// LOG THIS ISSUE IF IT OCCURS!
 			e1.printStackTrace();
