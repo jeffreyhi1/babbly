@@ -165,6 +165,13 @@ public class SipRegistrationtListener implements SipListener{
 				PrimaryWindowController.statusMessage("Not Connected");
 				registration.setRegisterState(RegisterState.UNREGISTERED);
 			}
+			else if(registration.getRegisterState() == RegisterState.UNREGISTERING){
+				System.out.println("UNREGISTERING - UNAUTH - authorize!");
+				registration.authorize(response, clientTransaction);
+				registration.setRegisterState(RegisterState.UNREGISTERING);
+//				System.out.println("UNREGISTERING - UNAUTH - authorize! -> Register!!!!");
+//				registration.unregister();
+			}
 
 			// SO A Registration information is needed here !!
 
