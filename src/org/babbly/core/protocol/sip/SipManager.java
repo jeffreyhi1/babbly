@@ -297,6 +297,7 @@ public class SipManager {
 
 		ViaHeader viaHeader = headerFactory.createViaHeader(
 				host, port, protocol, branch);
+//		viaHeader.setParameter("rport", null);	
 		// adds the via headers
 		viaHeaders.add(viaHeader);
 	}
@@ -451,6 +452,12 @@ public class SipManager {
 	public SipProvider createSipProvider(String host, int port, String protocol) 
 	throws ObjectInUseException, TransportNotSupportedException, InvalidArgumentException {
 		listeningPoint = sipStack.createListeningPoint(host, port, protocol);
+//		try {
+//			listeningPoint.setSentBy(StunResolver.getPublicIP());
+//		} catch (ParseException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		System.out.println("ListeningPoint sentby: "+listeningPoint.getSentBy());
 		sipProvider = sipStack.createSipProvider(listeningPoint);
 		return sipProvider;

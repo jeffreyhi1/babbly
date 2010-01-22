@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *   
  */
-package org.babbly.core.util;
+package org.babbly.ui.gui.settings;
 
 import java.util.Properties;
 
