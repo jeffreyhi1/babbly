@@ -36,7 +36,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
+import org.babbly.core.config.Configurator;
+import org.babbly.core.config.Property;
 import org.babbly.core.net.InetAddresResolver;
+import org.babbly.core.protocol.sip.SipClientListener;
 import org.babbly.core.protocol.sip.SipManager;
 import org.babbly.core.protocol.sip.SipRegistration;
 import org.babbly.core.protocol.sip.SipUser;
@@ -51,7 +54,7 @@ import org.babbly.ui.gui.view.PrimaryWindow;
  * 
  * @version 0.8
  */
-public class PrimaryWindowController {
+public class PrimaryWindowController implements SipClientListener {
 
 	private static PrimaryWindow primaryWindow = null;
 	private OptionsWindowController optionsWindowController = null;
@@ -141,23 +144,13 @@ public class PrimaryWindowController {
 
 		int listenPort = options.getListenPort();
 		String protocol = options.getNetworkProtocol();
-		
-		
-		// -------------------------------------
-		InetAddress host = InetAddresResolver.resolveInternetInterface();
-		// -------------------------------------
 
+
+		InetAddress addr = InetAddresResolver.resolveInternetInterface();
+		String ip = addr.getHostAddress();
+		
 		try {
-			manager = new SipManager("test", null);
-			System.out.println("LISTEN PORT: "+listenPort);
-			System.out.println("sip provider before: "+manager.getSipProvider());
-			manager.createSipProvider(host.getHostAddress(),
-					(listenPort > 0 ? listenPort : DEFAULT_LISTENING_PORT),
-					(protocol != null
-							&& (protocol.equalsIgnoreCase("TCP") || protocol
-									.equalsIgnoreCase("UDP")) ? protocol
-							: DEFAULT_TRANSPORT_PROTOCOL));
-			System.out.println("sip provider after: "+manager.getSipProvider());
+			manager = new SipManager(ip, listenPort, protocol);
 		} catch (PeerUnavailableException e1) {
 			// LOG THIS ISSUE IF IT OCCURS!
 			e1.printStackTrace();
@@ -170,7 +163,7 @@ public class PrimaryWindowController {
 			// neither will this
 		}
 		if (manager != null) {
-			registration = new SipRegistration(manager);
+			registration = new SipRegistration(manager, this);
 		}
 
 		System.out.println("Sip manager = " + manager);
@@ -207,9 +200,9 @@ public class PrimaryWindowController {
 						logoutMenuItemActionPerformed(e);
 					}
 				});
-		
-		
-		
+
+
+
 		primaryWindow.getLoginPane().getUsernameField().setText("mrjbg@iptel.org");
 		primaryWindow.getLoginPane().getPasswordField().setText("mrjbgiptel");
 		primaryWindow.getLoginPane().getLoginButton().setEnabled(true);
@@ -225,15 +218,6 @@ public class PrimaryWindowController {
 		callee = new SipUser(primaryWindow.getLoginPane().getUsernameField()
 				.getText());
 
-		// System.out.println("FA: "+callee.getFullAddress());
-		// System.out.println("HN: "+callee.getHostname());
-		// System.out.println("PW: "+callee.getPassword());
-		// System.out.println("P: "+callee.getPort());
-		// System.out.println("SN: "+callee.getScreenname());
-		// System.out.println("SA: "+callee.getSipAddress());
-		// System.out.println("UN: "+callee.getUsername());
-		// System.out.println("------------------");
-
 		if (callee.isValidSipUser()) {
 			primaryWindow.getLoginPane().getMessagePane().setVisible(false);
 			primaryWindow.getLoginPane().getLoginButton().setEnabled(true);
@@ -241,7 +225,7 @@ public class PrimaryWindowController {
 		} else {
 			primaryWindow.getLoginPane().getMessagePane().setVisible(true);
 			primaryWindow.getLoginPane().getMessageLabel().setText(
-					"Invalid SIP username!");
+			"Invalid SIP username!");
 			primaryWindow.getLoginPane().getLoginButton().setEnabled(false);
 		}
 
@@ -269,7 +253,7 @@ public class PrimaryWindowController {
 				primaryWindow.getLoginPane().getPasswordField().setEnabled(
 						false);
 				primaryWindow.getLoginPane().getRememberPassCheckBox()
-						.setEnabled(false);
+				.setEnabled(false);
 				primaryWindow.getLoginPane().getPassForgotLabel().setEnabled(
 						false);
 				primaryWindow.getLoginPane().getRegisterLabel().setEnabled(
@@ -291,7 +275,7 @@ public class PrimaryWindowController {
 				// "card3");
 
 				primaryWindow.getStatusTextLabel().setText(
-						"Proceeding with registration...");
+				"Proceeding with registration...");
 
 				registration.register(callee);
 			}
@@ -328,14 +312,14 @@ public class PrimaryWindowController {
 		});
 	}
 
-	public static void feedbackMessage(String message) {
+	private static void feedbackMessage(String message) {
 		if (message != null) {
 			primaryWindow.getLoginPane().getMessageLabel().setText(message);
 			primaryWindow.getLoginPane().getMessagePane().setVisible(true);
 		}
 	}
 
-	public static void statusMessage(String message) {
+	private void statusMessage(String message) {
 		if (message != null) {
 			primaryWindow.getStatusTextLabel().setText(message);
 			primaryWindow.getStatusPane().setVisible(true);
@@ -343,7 +327,7 @@ public class PrimaryWindowController {
 		}
 	}
 
-	public static void statusRunning(boolean runIt) {
+	private static void statusRunning(boolean runIt) {
 		if (runIt) {
 			busyIconTimer.start();
 		} else {
@@ -352,15 +336,15 @@ public class PrimaryWindowController {
 		}
 	}
 
-	public static void hideFeedback() {
+	private void hideFeedback() {
 		primaryWindow.getLoginPane().getMessagePane().setVisible(false);
 	}
 
-	public static void hideStatus() {
+	private void hideStatus() {
 		primaryWindow.getStatusPane().setVisible(false);
 	}
 
-	public static void loginEnabled(boolean enabled) {
+	private void loginEnabled(boolean enabled) {
 		primaryWindow.getLoginPane().getLoginButton().setEnabled(enabled);
 		primaryWindow.getLoginPane().getUsernameField().setEnabled(enabled);
 		primaryWindow.getLoginPane().getPasswordField().setEnabled(enabled);
@@ -368,17 +352,16 @@ public class PrimaryWindowController {
 		primaryWindow.getLoginPane().getRegisterLabel().setEnabled(enabled);
 		primaryWindow.getLoginPane().getRememberPassCheckBox().setEnabled(
 				enabled);
-
 	}
 
-	public static void showCallPane() {
+	void showCallPane() {
 		primaryWindow.getLogoutMenuItem().setEnabled(true);
 		CardLayout cardLayout = (CardLayout) primaryWindow.getCardPane()
-				.getLayout();
+		.getLayout();
 		cardLayout.show(primaryWindow.getCardPane(), "card3");
 	}
 
-	public static void showLoginPane() {
+	void showLoginPane() {
 		primaryWindow.getLogoutMenuItem().setEnabled(false);
 
 		if (!primaryWindow.getLoginPane().getRememberPassCheckBox()
@@ -387,9 +370,55 @@ public class PrimaryWindowController {
 		}
 
 		CardLayout cardLayout = (CardLayout) primaryWindow.getCardPane()
-				.getLayout();
+		.getLayout();
 
 		cardLayout.show(primaryWindow.getCardPane(), "card2");
+	}
+	
+	@Override
+	public void onConnecting() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onError(Error error) {
+		switch(error){
+		case WRONG_PASSWORD:
+			feedbackMessage("Wrong password!");
+			loginEnabled(true);
+			statusRunning(false);
+			statusMessage("Not Connected");
+			break;
+		case INVALID_ADDR:
+			feedbackMessage("Unknown Server Address");
+			loginEnabled(true);
+			statusRunning(false);
+			statusMessage("Not Connected");
+			break;
+		default:
+			;
+		}
+	}
+
+	@Override
+	public void onLogin() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onLoginAuth() {
+		statusMessage("Connected");
+		statusRunning(false);
+		showCallPane();
+
+	}
+
+	@Override
+	public void onLogout() {
+		// TODO Auto-generated method stub
+
 	}
 
 }

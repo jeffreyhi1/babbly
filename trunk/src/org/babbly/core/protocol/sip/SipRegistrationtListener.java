@@ -33,6 +33,7 @@ import javax.sip.header.ExpiresHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 
+import org.babbly.core.protocol.sip.SipClientListener.Error;
 import org.babbly.ui.gui.controller.PrimaryWindowController;
 
 
@@ -48,6 +49,7 @@ public class SipRegistrationtListener implements SipListener{
 
 
 	private SipRegistration registration = null;
+	private SipClientListener listener = null;
 	
 	/**
 	 * Constructs a <code>SipRegistrationListener</code> with the specified
@@ -55,7 +57,9 @@ public class SipRegistrationtListener implements SipListener{
 	 * 
 	 * @param registration the initiator of the manager request.
 	 */
-	public SipRegistrationtListener(SipRegistration registration){
+	public SipRegistrationtListener(SipRegistration registration, 
+			SipClientListener listener){
+		this.listener = listener;
 		this.registration = registration;
 	}
 
@@ -116,20 +120,22 @@ public class SipRegistrationtListener implements SipListener{
 			}
 
 			if(registration.registerState == RegisterState.AUTHENTICATING){
-				PrimaryWindowController.statusMessage("Connected");
-				PrimaryWindowController.statusRunning(false);
+				listener.onLogin();
+//				PrimaryWindowController.statusMessage("Connected");
+//				PrimaryWindowController.statusRunning(false);
 
 				// keep alive the registration re-sending an registration request
 				// slightly before the current registration expires 
 				registration.keepRegistrationAlive(expirationInterval-100);
-				PrimaryWindowController.showCallPane();
+//				PrimaryWindowController.showCallPane();
 			}
 			else if(registration.getRegisterState() == RegisterState.UNREGISTERING){
 				registration.setRegisterState(RegisterState.UNREGISTERED);
-				PrimaryWindowController.statusMessage("Not Connected");
-				PrimaryWindowController.statusRunning(false);
-				PrimaryWindowController.showLoginPane();
-				PrimaryWindowController.loginEnabled(true);
+				listener.onLogout();
+//				PrimaryWindowController.statusMessage("Not Connected");
+//				PrimaryWindowController.statusRunning(false);
+//				PrimaryWindowController.showLoginPane();
+//				PrimaryWindowController.loginEnabled(true);
 				
 			}
 
@@ -139,7 +145,8 @@ public class SipRegistrationtListener implements SipListener{
 		else if (respStatusCode == Response.TRYING) {
 			System.out.println("TRYING");
 			if(registration.getRegisterState() == RegisterState.REGISTERING){
-				PrimaryWindowController.statusMessage("Connecting...");
+//				PrimaryWindowController.statusMessage("Connecting...");
+				listener.onConnecting();
 			}
 		}
 		//401 UNAUTHORIZED
@@ -151,7 +158,8 @@ public class SipRegistrationtListener implements SipListener{
 			System.out.println("UNAUTHORIZED");
 
 			if(registration.getRegisterState() == RegisterState.REGISTERING){
-				PrimaryWindowController.statusMessage("Trying to authenticate...");
+				listener.onLoginAuth();
+//				PrimaryWindowController.statusMessage("Trying to authenticate...");
 				registration.authorize(response, clientTransaction);
 			}
 			else if(registration.getRegisterState() == RegisterState.REGISTERED){
@@ -159,10 +167,11 @@ public class SipRegistrationtListener implements SipListener{
 				registration.authorize(response, clientTransaction);
 			}
 			else if(registration.getRegisterState() == RegisterState.AUTHENTICATING){
-				PrimaryWindowController.feedbackMessage("Wrong password!");
-				PrimaryWindowController.loginEnabled(true);
-				PrimaryWindowController.statusRunning(false);
-				PrimaryWindowController.statusMessage("Not Connected");
+				listener.onError(Error.WRONG_PASSWORD);
+//				PrimaryWindowController.feedbackMessage("Wrong password!");
+//				PrimaryWindowController.loginEnabled(true);
+//				PrimaryWindowController.statusRunning(false);
+//				PrimaryWindowController.statusMessage("Not Connected");
 				registration.setRegisterState(RegisterState.UNREGISTERED);
 			}
 			else if(registration.getRegisterState() == RegisterState.UNREGISTERING){
@@ -199,9 +208,10 @@ public class SipRegistrationtListener implements SipListener{
 	@Override
 	public void processTimeout(TimeoutEvent e) {
 		System.out.println("processTimeout");
-		PrimaryWindowController.statusMessage("Connection timed out");
-		PrimaryWindowController.statusRunning(false);
-		PrimaryWindowController.loginEnabled(true);
+		listener.onError(Error.CONNECTION_TIMEOUT);
+//		PrimaryWindowController.statusMessage("Connection timed out");
+//		PrimaryWindowController.statusRunning(false);
+//		PrimaryWindowController.loginEnabled(true);
 	}
 
 	@Override

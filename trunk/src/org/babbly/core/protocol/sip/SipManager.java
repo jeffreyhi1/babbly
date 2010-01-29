@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
+import javax.sip.ClientTransaction;
 import javax.sip.InvalidArgumentException;
 import javax.sip.ListeningPoint;
 import javax.sip.ObjectInUseException;
 import javax.sip.PeerUnavailableException;
+import javax.sip.ServerTransaction;
 import javax.sip.SipFactory;
 import javax.sip.SipProvider;
 import javax.sip.SipStack;
+import javax.sip.TransactionAlreadyExistsException;
+import javax.sip.TransactionUnavailableException;
 import javax.sip.TransportNotSupportedException;
 import javax.sip.address.Address;
 import javax.sip.address.AddressFactory;
@@ -55,6 +59,8 @@ import javax.sip.message.Request;
 import javax.sip.message.Response;
 
 import org.babbly.core.authorization.DigestAlgorithm;
+import org.babbly.core.config.Configurator;
+import org.babbly.core.config.Property;
 import org.babbly.core.util.Base64;
 
 
@@ -69,7 +75,7 @@ import org.babbly.core.util.Base64;
  * what's done 'behind the scene'.
  * 
  * @author Georgi Dimitrov
- * @version 0.3
+ * @version 0.4
  *
  */
 public class SipManager {
@@ -84,89 +90,40 @@ public class SipManager {
 	private SipProvider    sipProvider 	  = null;
 
 	private ArrayList<ViaHeader> viaHeaders = null;
-	private Properties	   		 properties = null;
 
 	private ListeningPoint listeningPoint = null;
 
 	private Random randomInt = new Random();
+	private long cSeqCount = 0L;
 
 
-	/**
-	 * Constructs the SipManager object. Initializes the main components of the
-	 * sip manager class, the sip stack and turns logging on/off.
-	 * 
-	 * @param stackname - the name of the sip stack 
-	 * @param logfile - path of the logfile(if <code>null<code>, no logging)
-	 * @throws PeerUnavailableException if the initinialization of the sip 
-	 * 		   manager's components fails (peer class not found)
-	 */
-	public SipManager(String stackname, String logfile) throws PeerUnavailableException{
-		init(stackname, logfile);
-	}
+	public SipManager(String hostname, int port, String p) 
+	throws PeerUnavailableException, TransportNotSupportedException,
+	InvalidArgumentException, ObjectInUseException {
+		
+		if(!p.equalsIgnoreCase("tcp") && !p.equalsIgnoreCase("udp")){
+			throw new InvalidArgumentException("Invalid protocol. Only TCP or UDP allowed!");
+		}
 
-	/**
-	 * Constructs the SipManager object from specified Properties file
-	 * 
-	 * @param properties - the properties file 
-	 * @throws PeerUnavailableException if the initinialization of the sip 
-	 * 		   manager's components fails (peer class not found)
-	 */
-	public SipManager(Properties properties) throws PeerUnavailableException{
-		init(properties);
-	}
-
-	/**
-	 * Initializes the <code>SipManager</code> components for later use.
-	 * Sets a bunch of propertis and creates instances of a SipFactory and
-	 * SipStack implementations based on those properties.
-	 * The SipFactory is than used to create the address, header and message
-	 * Factories. The SipStack will be later used to create a sip provider. 
-	 *  
-	 * @throws PeerUnavailableException if the peer class could not be found
-	 */
-	private void init(String stackname, String logfile) throws PeerUnavailableException {
-		properties = new Properties();
-		properties.setProperty("javax.sip.STACK_NAME", stackname);
+		Properties properties = new Properties();
+		properties.setProperty("javax.sip.STACK_NAME","test");
+//				Configurator.get(Property.JAINSIP_STACKNAME));
+		// do not add a default gov.nist.javax.sip.SERVER_LOG property for logging
 
 		sipFactory = SipFactory.getInstance();
-		sipFactory.setPathName("gov.nist"); // the path where the implementation of JAIN SIP is to be found
+		// set the path where the implementation of JAIN SIP is to be found
+		sipFactory.setPathName("gov.nist"); 
 
-		if(logfile == null){
-			//do not log anything by default (if no logging file has been specified)
-			//properties.setProperty("gov.nist.javax.sip.TRACE_LEVEL", DEFAULT_LOG_LEVEL); 
-		}
-		else{
-			//if a logging file has been specified, log the trace
-			properties.setProperty("gov.nist.javax.sip.SERVER_LOG",logfile);
-			properties.setProperty("gov.nist.javax.sip.TRACE_LEVEL", "16"); // do logging(16-logging, 32-debug)
-		}
-		sipStack = sipFactory.createSipStack(properties); // creates the sipstack from the 
-		// properties we specified
+		// create the sip stack
+		sipStack = sipFactory.createSipStack(properties); 
+
+		// create the header address and message factories
 		headerFactory = sipFactory.createHeaderFactory();
 		addressFactory = sipFactory.createAddressFactory();
 		messageFactory = sipFactory.createMessageFactory();
-	}
 
-	/**
-	 * Initializes the <code>SipManager</code> components for later use.
-	 * Sets a bunch of propertis and creates instances of a SipFactory and
-	 * SipStack implementations based on those properties.
-	 * The SipFactory is than used to create the address, header and message
-	 * Factories. The SipStack will be later used to create a sip provider. 
-	 *  
-	 * @throws PeerUnavailableException if the peer class could not be found
-	 */
-	private void init(Properties properties) throws PeerUnavailableException {
-		this.properties = properties;
-
-		sipFactory = SipFactory.getInstance();
-		sipFactory.setPathName("gov.nist"); // the path where the implementation of JAIN SIP is to be found
-
-		sipStack = sipFactory.createSipStack(properties); // creates the sipstack from the 
-		// properties parameter
-		headerFactory = sipFactory.createHeaderFactory();
-		addressFactory = sipFactory.createAddressFactory();
-		messageFactory = sipFactory.createMessageFactory();
+		listeningPoint = sipStack.createListeningPoint(hostname, port, p);
+		sipProvider = sipStack.createSipProvider(listeningPoint);
 	}
 
 	/**
@@ -199,7 +156,7 @@ public class SipManager {
 	}
 
 	/**
-	 * Creates To Header from the specified username, sip-addres and sets it's
+	 * Creates To Header from the specified username, sip-address and sets it's
 	 * displayname to the specified value. The To-Header specifies the user to
 	 * which a request is going to be send. 
 	 * 
@@ -297,7 +254,7 @@ public class SipManager {
 
 		ViaHeader viaHeader = headerFactory.createViaHeader(
 				host, port, protocol, branch);
-//		viaHeader.setParameter("rport", null);	
+		//		viaHeader.setParameter("rport", null);	
 		// adds the via headers
 		viaHeaders.add(viaHeader);
 	}
@@ -359,12 +316,12 @@ public class SipManager {
 	 * Creates a new ContentTypeHeader based on the newly supplied contentType 
 	 * and contentSubType values.
 	 *  
-	 * @throws ParseException if an error has occured while parsing the values
+	 * @throws ParseException if an error has occurred while parsing the values
 	 */
 	public ContentTypeHeader createContentTypeHeader(String type, String subType)
 	throws ParseException{
 
-		//TODO wo should consider putting that piece of code in another method, say in "createRequest"
+		//TODO we should consider putting that piece of code in another method, say in "createRequest"
 		// Create ContentTypeHeader
 		ContentTypeHeader contentTypeHeader = headerFactory
 		.createContentTypeHeader(type, subType);
@@ -375,24 +332,29 @@ public class SipManager {
 
 	/**
 	 * Creates a new CSeqHeader based on the newly supplied sequence number and 
-	 * method values. If the specified secuence is less than 0, it is set to
+	 * method values. If the specified sequence is less than 0, it is set to
 	 * default value of 0.
 	 *  
 	 * @param sequence - the new long value of the sequence number.
 	 * @param requestType - the new string value of the request type.
 	 * @return the newly created CSeqHeader object
-	 * @throws ParseException if an error has occured while parsing the values
+	 * @throws ParseException if an error has occurred while parsing the values
 	 */
-	public CSeqHeader createCseqHeader(long sequence, String requestType) 
+	public CSeqHeader createCseqHeader(String requestType) 
 	throws ParseException {
 		// Create a new Cseq header
 		CSeqHeader cSeqHeader = null;
-		if(sequence < 0){sequence = 0;}
 		try {
-			cSeqHeader = headerFactory.createCSeqHeader(sequence, requestType);
+			cSeqHeader = headerFactory.createCSeqHeader(++cSeqCount, requestType);
 		} catch (InvalidArgumentException e) { }
 
 		return cSeqHeader;
+	}
+	
+	public void incrementCSeq(Request request) throws InvalidArgumentException {
+		CSeqHeader cSeq = (CSeqHeader)request.getHeader(CSeqHeader.NAME);
+		cSeq.setSeqNumber(cSeq.getSeqNumber() + 1l);
+		cSeqCount = cSeq.getSeqNumber(); // synchronize the manager's cSeqCount
 	}
 
 	/**
@@ -425,7 +387,7 @@ public class SipManager {
 	 * @param headerName - the name of the header
 	 * @param headerValue - the value of the header
 	 * @return the newly created Header object
-	 * @throws ParseException if an error has occured while parsing the values
+	 * @throws ParseException if an error has occurred while parsing the values
 	 */
 	public Header createHeader(String headerName, String headerValue) throws ParseException{
 		// Add the extension header.
@@ -448,23 +410,24 @@ public class SipManager {
 	 * @return	the newly created sip provider object
 	 * @throws  TransportNotSupportedException  if protocol is not supported
 	 * @throws  InvalidArgumentException	 if some of the arguments is invalid
+	 * @deprecated - should not be used anymore
 	 */
 	public SipProvider createSipProvider(String host, int port, String protocol) 
 	throws ObjectInUseException, TransportNotSupportedException, InvalidArgumentException {
 		listeningPoint = sipStack.createListeningPoint(host, port, protocol);
-//		try {
-//			listeningPoint.setSentBy(StunResolver.getPublicIP());
-//		} catch (ParseException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			listeningPoint.setSentBy(StunResolver.getPublicIP());
+		//		} catch (ParseException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		}
 		System.out.println("ListeningPoint sentby: "+listeningPoint.getSentBy());
 		sipProvider = sipStack.createSipProvider(listeningPoint);
 		return sipProvider;
 	}
 
 	/**
-	 * Creates new Request message of type specified by the method paramater,
+	 * Creates new Request message of type specified by the method parameter,
 	 * containing the URI of the Request, the mandatory headers of the message
 	 * with a body in the form of a Java object and the body content type.
 	 *
@@ -490,7 +453,7 @@ public class SipManager {
 			createContentTypeHeader("application", "sdp");
 
 		MaxForwardsHeader maxForwards = createMaxForwardsHeader(maxForward);
-		CSeqHeader cSeqHeader = createCseqHeader(1L, method);
+		CSeqHeader cSeqHeader = createCseqHeader(method);
 		Object content = sdpData.getBytes();
 		Request request = messageFactory.createRequest(requestURI, method, callId,
 				cSeqHeader, from, to, via, maxForwards, contentType, content);
@@ -499,7 +462,7 @@ public class SipManager {
 	}
 
 	/**
-	 * Creates new Request message of type specified by the method paramater,
+	 * Creates new Request message of type specified by the method parameter,
 	 * containing the URI of the Request, the mandatory headers of the message
 	 * with a body in the form of a Java object and the body content type.
 	 *
@@ -547,7 +510,7 @@ public class SipManager {
 	 * @param method method of the request pending authentication
 	 * @param uri the digest-uri
 	 * @param requestBody the body of the request
-	 * @param authHeader the challenge that provokes the autorization.
+	 * @param authHeader the challenge that provokes the authorization.
 	 * @param userCredentials the password and username of the user
 	 *
 	 * @return an <code>AuthorizationHeader</code> to confirm the user identity.
@@ -632,16 +595,16 @@ public class SipManager {
 			Request request,
 			WWWAuthenticateHeader authHeader,
 			SipUser user){
-		
+
 		ProxyAuthorizationHeader header = null;
-		
+
 		try {
 			header = headerFactory.createProxyAuthorizationHeader("Basic");
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return header;
 	}
 
@@ -649,12 +612,12 @@ public class SipManager {
 
 	/**
 	 * Creates a new Response message of type specified by the statusCode 
-	 * paramater, based on a specific Request message. 
+	 * parameter, based on a specific Request message. 
 	 * 
 	 * @param statuscode - the status code value of the response
 	 * @param request - the received request to which an response is to be send
 	 * @return the newly created response object
-	 * @throws ParseException if an error has occured while parsing the values
+	 * @throws ParseException if an error has occurred while parsing the values
 	 */
 	public Response createResponse(int statuscode, Request request) throws ParseException{
 
@@ -686,6 +649,28 @@ public class SipManager {
 		}
 		return -1;
 	}
+	
+	public String getIpAddress(){
+		return listeningPoint.getIPAddress();
+	}
 
+	/**
+	 * @param request
+	 * @return
+	 * @throws TransactionAlreadyExistsException
+	 * @throws TransactionUnavailableException
+	 */
+	public ServerTransaction createNewServerTransaction(Request request) throws 
+	TransactionAlreadyExistsException, TransactionUnavailableException {
+		return sipProvider.getNewServerTransaction(request);
+	}
 
+	public ClientTransaction createNewClientTransaction(Request request) throws 
+	TransactionUnavailableException {
+		return sipProvider.getNewClientTransaction(request);
+	}
+
+	public CallIdHeader createNewCallId() {
+		return sipProvider.getNewCallId();
+	}
 }
