@@ -17,12 +17,8 @@
  */
 package org.babbly.core.protocol.sip;
 
-import gov.nist.javax.sip.message.SIPRequest;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
 import java.text.ParseException;
-import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.TooManyListenersException;
 
@@ -47,54 +43,46 @@ import javax.sip.header.WWWAuthenticateHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 
-import org.babbly.ui.gui.controller.PrimaryWindowController;
+import org.babbly.core.net.InetAddresResolver;
 
 
 
 
 /**
  * @author Georgi Dimitrov (MrJ)
- * @version 0.1 - Last Edited: June 6th 2008
+ * @version 0.3 - 29/01/2010
  */
 public class SipRegistration {
 
 	private static final int DEFAULT_EXPIRE_TIME = 3600;
 
-
 	private SipUser user = null; 
 	private SipManager manager = null;
 
-	private int CSeqValue = 1;
-
-	private String ourIPAddressString;
-	private InetAddress registrarAddress;
-
-
-	private long lasttimeRegister = 0l;
-
+//	private int CSeqValue = 1;
+//	private long lasttimeRegister = 0;
 
 	RegistrationScheduler registrationScheduler = null;
-
 	Request authRequest = null;
-
 	RegisterState registerState = RegisterState.UNSPECIFIED;
+	//	HashMap<SipUser, String> map = new HashMap<SipUser, String>();
 
-	HashMap<SipUser, String> map = new HashMap<SipUser, String>();
+	private SipClientListener listener = null;
 
 
 
 	/**
 	 * @param manager
 	 */
-	public SipRegistration(SipManager manager){
+	public SipRegistration(SipManager manager, SipClientListener listener){
 		this.manager = manager;
+		this.listener = listener;
 		registrationScheduler = new RegistrationScheduler(this);
 
 		try {
 			manager.getSipProvider().addSipListener(
-					new SipRegistrationtListener(this));
+					new SipRegistrationtListener(this, listener));
 		} catch (TooManyListenersException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -105,10 +93,13 @@ public class SipRegistration {
 	 */
 	public void register(SipUser user){
 		this.user = user;
+		String username = user.getUsername();
+		String hostname = user.getHostname();
+		String displayName = user.getScreenname();
 
-		if(this.getRegisterState() == RegisterState.UNSPECIFIED || 
-				this.getRegisterState() == RegisterState.UNREGISTERED){
-			this.setRegisterState(RegisterState.REGISTERING);
+		if(registerState == RegisterState.UNSPECIFIED || 
+				registerState == RegisterState.UNREGISTERED){
+			registerState = RegisterState.REGISTERING;
 		}
 		else{
 			//this.setRegisterState(RegisterState.)
@@ -119,81 +110,36 @@ public class SipRegistration {
 		CSeqHeader cSeq = null;
 
 		try {
-			fromHeader = manager.createFromHeader(
-					user.getUsername(),
-					user.getHostname(),
-					user.getScreenname());
-
-			cSeq = manager.createCseqHeader(
-					incrementCSeq(), Request.REGISTER);
+			fromHeader = manager.createFromHeader(username, hostname, displayName);
+			cSeq = manager.createCseqHeader(Request.REGISTER);
 
 			// rfc3261 states that the To header and the From header are equal
 			// when dealing with REGISTER requests.
-			toHeader = manager.createToHeader(
-					user.getUsername(),
-					user.getHostname(),
-					user.getScreenname());
+			toHeader = manager.createToHeader(username, hostname, displayName);
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		CallIdHeader callIdHeader = manager.getSipProvider().getNewCallId();
+		CallIdHeader callIdHeader = manager.createNewCallId();
 
+		InetSocketAddress publicAddress = InetAddresResolver.getPublicAddress(manager.getPort());
 
-		try {
-			registrarAddress = InetAddress.getByName(user.getHostname());
-		} catch (UnknownHostException e2) {
-			// TODO logging
-			PrimaryWindowController.feedbackMessage("Unknown Server Address");
-			PrimaryWindowController.loginEnabled(true);
-			PrimaryWindowController.statusRunning(false);
-			PrimaryWindowController.statusMessage("Not Connected");
-			this.setRegisterState(RegisterState.UNSPECIFIED);
-			return;
-		}
-
-		//		NetworkUtility nm = new NetworkUtility();
-		//		InetAddress localAddress = nm.getLocalHost(registrarAddress);
+		String publicIP = publicAddress.getHostName();
+		int publicPort = publicAddress.getPort();
+		String protocol = manager.getProtocol();
 
 		manager.newViaHeaders();
 
-		//		try {
-		//			manager.addViaHeader(
-		//					"193.196.64.2",
-		//					8888,
-		//					"UDP",
-		//					null);
-		//			
+		try {
+			manager.addViaHeader(publicIP, publicPort, protocol, null);
+		} catch (ParseException e1) {
+			e1.printStackTrace();
+		} catch (InvalidArgumentException e1) {
+			e1.printStackTrace();
+		}
 
-		//			StunAddress mappedAddress = nm.resolvePublicAddress(manager.getPort()); 
-		//			System.out.println("mapped hostname = "+mappedAddress.getHostName());
-		//			System.out.println("mapped port = "+mappedAddress.getPort());
-		//			manager.addViaHeader(
-		//					"192.168.11.3",
-		//					5070,
-		//					manager.getProtocol(),
-		//					null);
-
-		//			manager.addViaHeader(
-		//			StunResolver.getPublicIP(),
-		//			5070,
-		//			"UDP",
-		//			null);
-
-
-		//		} catch (ParseException e1) {
-		//			// TODO Auto-generated catch block
-		//			e1.printStackTrace();
-		//		} catch (InvalidArgumentException e1) {
-		//			// TODO Auto-generated catch block
-		//			e1.printStackTrace();
-		//		}
-
-
-		//MaxForwardsHeader
-		MaxForwardsHeader maxForwardsHeader 
-		= manager.createMaxForwardsHeader(70);
+		//MaxForwardsHeader - good idea is to set it to 70 to avoid loops (rfc3621)
+		MaxForwardsHeader maxForwardsHeader = manager.createMaxForwardsHeader(70);
 
 		// begin to prepare the Request Header //
 
@@ -218,12 +164,9 @@ public class SipRegistration {
 					toHeader,
 					manager.getViaHeaders(),
 					maxForwardsHeader);
-
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 
 		//Expires Header
 		ExpiresHeader expHeader = null;
@@ -246,7 +189,6 @@ public class SipRegistration {
 			contactURI.setTransportParam(manager.getProtocol());
 			contactURI.setPort(manager.getPort());
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -258,7 +200,6 @@ public class SipRegistration {
 			try {
 				contactAddress.setDisplayName(user.getScreenname());
 			} catch (ParseException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -270,7 +211,6 @@ public class SipRegistration {
 		try {
 			contactHeader.setExpires(DEFAULT_EXPIRE_TIME);
 		} catch (InvalidArgumentException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -282,29 +222,16 @@ public class SipRegistration {
 		ClientTransaction regTrans = null;
 
 		try {
-			SIPRequest rr = (SIPRequest) request;
-			//			System.out.println("TOP_MOST_VIA: "+rr.getTopmostVia().getSentBy());
-			//			System.out.println("SP_LISTENING_POINT: "+
-			//					manager.getSipProvider().getListeningPoint().getSentBy());
-			regTrans = 
-				manager.getSipProvider().getNewClientTransaction(request);
-
+			regTrans = manager.createNewClientTransaction(request);
 			regTrans.sendRequest();
 		} catch (TransactionUnavailableException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SipException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		System.out.println("-Request.REGISTER- send!");
-		lasttimeRegister = System.currentTimeMillis();
+//		lasttimeRegister = System.currentTimeMillis();
 	}
-
-	private long incrementCSeq() {
-		return CSeqValue++;
-	}
-
 
 	public void register(String destination, SipUser user){
 
@@ -316,37 +243,15 @@ public class SipRegistration {
 	 * @param transaction
 	 */
 	@SuppressWarnings("unchecked")
-	public void authorize(Response response, 
-			ClientTransaction transaction){
+	public void authorize(Response response, ClientTransaction transaction){
 
-
-		this.setRegisterState(RegisterState.AUTHENTICATING);
-
-		//		if(map.get(user) != null){
-		//		PrimaryWindowController.feedbackMessage("Incorrect Password!");
-		//		PrimaryWindowController.statusMessage("Not Connected");
-		//		PrimaryWindowController.statusRunning(false);
-		//		PrimaryWindowController.loginEnabled(true);
-		//		map.remove(user);
-		//		return;
-		//		}
-
-
-		//		if(response == null || transaction == null){
-		//		//then what ? :) , they should not be null!
-		//		}
-
-
-		//		map.put(user, response.getReasonPhrase());
-
+		registerState = RegisterState.AUTHENTICATING;
 
 		int respStatusCode = response.getStatusCode();
 
 		//String branchID = transaction.getBranchId();
 
-
 		authRequest = (Request) transaction.getRequest().clone();
-
 
 		ListIterator<WWWAuthenticateHeader> authHeaders = null;
 
@@ -363,40 +268,33 @@ public class SipRegistration {
 		authRequest.removeHeader(ViaHeader.NAME);
 
 		ViaHeader refreshedViaHeader = null;
+
 		try {
 			refreshedViaHeader = manager.createViaheader(
-					viaHeader.getHost()
-					, viaHeader.getPort()
-					, viaHeader.getTransport()
-					, null);
+					viaHeader.getHost(), viaHeader.getPort(),
+					viaHeader.getTransport(), null);
 		} catch (ParseException e2) {
-			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		} catch (InvalidArgumentException e2) {
-			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
 
 		authRequest.setHeader(refreshedViaHeader);
-
-
 		authRequest.removeHeader(AuthorizationHeader.NAME);
 		authRequest.removeHeader(ProxyAuthorizationHeader.NAME);
 
 		try {
-			incrementCSeq(authRequest);
+			manager.incrementCSeq(authRequest);
 			//			reRegisterRequest.addHeader(cSeq);
 		} catch (InvalidArgumentException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
 		ClientTransaction reRegisterTransaction = null;
 		try {
 			reRegisterTransaction = 
-				manager.getSipProvider().getNewClientTransaction(authRequest);
+				manager.createNewClientTransaction(authRequest);
 		} catch (TransactionUnavailableException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -407,12 +305,8 @@ public class SipRegistration {
 			authHeader = (WWWAuthenticateHeader) authHeaders.next();
 			String realm = authHeader.getRealm();
 
-
-
-			AuthorizationHeader authorization = 
-				manager.createAuthorizationHeader(
-						authRequest, authHeader, user);
-
+			AuthorizationHeader authorization = manager.createAuthorizationHeader(
+					authRequest, authHeader, user);
 
 			//			CallIdHeader call = (CallIdHeader)reoriginatedRequest
 			//			.getHeader(CallIdHeader.NAME);
@@ -420,8 +314,6 @@ public class SipRegistration {
 			authRequest.addHeader(authorization);
 
 			//updateRegisterSequenceNumber(retryTran);
-
-
 
 			try {
 				reRegisterTransaction.sendRequest();
@@ -432,14 +324,13 @@ public class SipRegistration {
 		}
 	}
 
-
 	public void unregister(){
 
 		Request unregister = (Request) authRequest.clone();
 
 		try{
 			unregister.getExpires().setExpires(0);
-			this.incrementCSeq(unregister);
+			manager.incrementCSeq(unregister);
 
 
 			ViaHeader viaHeader
@@ -455,10 +346,8 @@ public class SipRegistration {
 		try {
 			contact.setExpires(0);
 		} catch (InvalidArgumentException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-
 
 		CallIdHeader call = (CallIdHeader)
 		unregister.getHeader(CallIdHeader.NAME);
@@ -471,58 +360,25 @@ public class SipRegistration {
 		//		if(authorization != null)
 		//			unregisterRequest.addHeader(authorization);
 
-
-
-
-
 		ClientTransaction transaction = null;
 
 		try {
-			transaction =
-				manager.getSipProvider().getNewClientTransaction(unregister);
+			transaction = manager.createNewClientTransaction(unregister);
 		} catch (TransactionUnavailableException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		try {
 			transaction.sendRequest();
 		} catch (SipException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		this.setRegisterState(RegisterState.UNREGISTERING);
 	}
 
-	private CSeqHeader incrementCSeq(Request request) 
-	throws InvalidArgumentException {
-		CSeqHeader cSeq = (CSeqHeader)request.getHeader(CSeqHeader.NAME);
-		cSeq.setSeqNumber(cSeq.getSeqNumber() + 1l);
-
-		return cSeq;
-	}
-
-
-
 	public void keepRegistrationAlive(long ms){
-
 		this.setRegisterState(RegisterState.REGISTERED);
-
 		registrationScheduler.scheduleRegister(ms);
-//		while(true){
-//			long currentTime = System.currentTimeMillis();
-//			if(currentTime - lasttimeRegister >= ms-100){
-//				System.out.println("cureentTime = "+currentTime);
-//				System.out.println("lasttimeRegister = "+lasttimeRegister);
-//				System.out.println("ms-100 = "+(ms-100));
-//				System.out.println("estimated = "+(currentTime - lasttimeRegister));
-//				System.out.println("KEEP-ALIVE SEND!");
-//				incrementCSeq();
-//				this.register(user);
-//				break;
-//			}
-//		}
 	}
 
 
