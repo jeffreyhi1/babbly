@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *   
  */
-package org.babbly.core.protocol.sip;
+package org.babbly.core.protocol.sip.registration;
 
 /**
  * The register states are a way to easily distinguish between the 
@@ -27,7 +27,7 @@ package org.babbly.core.protocol.sip;
  * @author Georgi Dimitrov (MrJ)
  * @version 0.1
  */
-public enum RegisterState {
+public enum RegistrationState {
 
 	
 	
@@ -36,7 +36,8 @@ public enum RegisterState {
 	 */
 	REGISTERING("registering"), AUTHENTICATING("authenticating"),
 	REGISTERED("registered"),UNREGISTERING("unregistering"),
-	UNREGISTERED("unregistered"),UNSPECIFIED(null);
+	UNREGISTERED("unregistered"),UNSPECIFIED(null), 
+	AUTHENTICATION_FAILED("authentication failed");
 
 	/**
 	 * Contains a more human readable description of the state.
@@ -54,7 +55,7 @@ public enum RegisterState {
 	 * @param text the specified user friendly text to be used for the creation
 	 * of an enumeration object.
 	 */
-	RegisterState(String text){
+	RegistrationState(String text){
 		this.text = text;
 	}
 	

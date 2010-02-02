@@ -59,7 +59,7 @@ import javax.sip.message.Request;
 import javax.sip.message.Response;
 
 import org.babbly.core.authorization.DigestAlgorithm;
-import org.babbly.core.config.Configurator;
+import org.babbly.core.config.Conf;
 import org.babbly.core.config.Property;
 import org.babbly.core.util.Base64;
 
@@ -75,7 +75,7 @@ import org.babbly.core.util.Base64;
  * what's done 'behind the scene'.
  * 
  * @author Georgi Dimitrov
- * @version 0.4
+ * @version 0.3
  *
  */
 public class SipManager {
@@ -97,17 +97,17 @@ public class SipManager {
 	private long cSeqCount = 0L;
 
 
-	public SipManager(String hostname, int port, String p) 
+	public SipManager(String hostname, int port, String protocol) 
 	throws PeerUnavailableException, TransportNotSupportedException,
 	InvalidArgumentException, ObjectInUseException {
 		
-		if(!p.equalsIgnoreCase("tcp") && !p.equalsIgnoreCase("udp")){
+		if(!protocol.equals("TCP") && !protocol.equals("UDP")){
 			throw new InvalidArgumentException("Invalid protocol. Only TCP or UDP allowed!");
 		}
 
 		Properties properties = new Properties();
-		properties.setProperty("javax.sip.STACK_NAME","test");
-//				Configurator.get(Property.JAINSIP_STACKNAME));
+		properties.setProperty("javax.sip.STACK_NAME",
+				Conf.get(Property.JAINSIP_STACKNAME));
 		// do not add a default gov.nist.javax.sip.SERVER_LOG property for logging
 
 		sipFactory = SipFactory.getInstance();
@@ -122,7 +122,7 @@ public class SipManager {
 		addressFactory = sipFactory.createAddressFactory();
 		messageFactory = sipFactory.createMessageFactory();
 
-		listeningPoint = sipStack.createListeningPoint(hostname, port, p);
+		listeningPoint = sipStack.createListeningPoint(hostname, port, protocol);
 		sipProvider = sipStack.createSipProvider(listeningPoint);
 	}
 
@@ -254,7 +254,7 @@ public class SipManager {
 
 		ViaHeader viaHeader = headerFactory.createViaHeader(
 				host, port, protocol, branch);
-		//		viaHeader.setParameter("rport", null);	
+				viaHeader.setParameter("rport", null);	
 		// adds the via headers
 		viaHeaders.add(viaHeader);
 	}

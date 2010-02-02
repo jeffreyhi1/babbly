@@ -24,6 +24,7 @@ package org.babbly.core.config;
  * The constants are grouped in small portions(network, UI, etc.)
  * 
  * @author Georgi Dimitrov (MrJ)
+ * @version 0.4
  *
  */
 public interface Property {
@@ -56,6 +57,16 @@ public interface Property {
     public static final String BIND_RETRIES = "bind.retries";
     
 	public static final String RESOLV_DEST = "resolve.destination";
+	
+	public static final String TRANSPORT_PROTOCOL = "protocol.transport";
+	
+	public static final String JAINSIP_PATH = "jain-sip.path";
+	
+	public static final String JAINSIP_STACKNAME = "jain-sip.stackname";
+	
+	public static final String SIP_BIND_PORT = "sip.bind.port";
+	
+	public static final String SIP_REQ_EXPIRE = "sip.request.expire";
     
     
     
@@ -80,6 +91,16 @@ public interface Property {
     public static final String BIND_RETRIES_DEFAULT = "5";
 
 	public static final String RESOLV_DEST_DEFAULT = "google.com";
+	
+	public static final String TRANSPORT_PROTOCOL_DEFAULT = "UDP";
+	
+	public static final String JAINSIP_PATH_DEFAULT = "gov.nist";
+	
+	public static final String JAINSIP_STACKNAME_DEFAULT = "jain-sip";
+	
+	public static final String SIP_BIND_PORT_DEFAULT = "5070";
+	
+	public static final String SIP_REQ_EXPIRE_DEFAULT = "3600";
 
     
     public class Pattern{
@@ -100,9 +121,16 @@ public interface Property {
         public static final String BIND_RETRIES = "";
 
 		public static final String RESOLV_DEST = "";
+		
+		public static final String TRANSPORT_PROTOCOL = "";
+		
+		public static final String JAINSIP_PATH = "";
+		
+		public static final String JAINSIP_STACKNAME = "";
+		
+		public static final String SIP_BIND_PORT = "";
+		
+		public static final String SIP_REQ_EXPIRE = "";
     }
-    
-    
-    
 	
 }
