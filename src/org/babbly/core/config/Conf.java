@@ -20,18 +20,18 @@ package org.babbly.core.config;
 import java.util.Properties;
 
 
-public class Configurator {
+public class Conf {
 
 	static Properties properties = new Properties();
 	
 	/*
 	 * A static constructor that will be called only the first time a
 	 * method of this class is invoked.
-	 */
+	 */	
 	static{
-		for (PropEnum propEnum : PropEnum.values()) {
-			System.out.println("prop name: "+propEnum.getName());
-			properties.put(propEnum.getName(), propEnum.getDefaultValue());
+		for (PropertyRule rule : PropertyRule.values()) {
+			System.out.println("prop name: "+rule.getName());
+			properties.put(rule.getName(), rule.getDefaultValue());
 		}
 	}
 	
@@ -41,10 +41,10 @@ public class Configurator {
 		
 		
 		for (String propKey : prop.stringPropertyNames()) {
-			for(PropEnum propEnum: PropEnum.values()){
-				if(propEnum.getName().equals(propKey)){
+			for(PropertyRule rule: PropertyRule.values()){
+				if(rule.getName().equals(propKey)){
 					String propValue = prop.getProperty(propKey);
-					if(propEnum.isValidValue(propValue)){
+					if(rule.isValidValue(propValue)){
 						properties.setProperty(propKey, propValue);
 					}else{
 						// log: that property value is not valid - using default

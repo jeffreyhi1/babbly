@@ -22,12 +22,10 @@ import java.util.Properties;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import org.babbly.core.config.Configurator;
+import org.babbly.core.config.Conf;
 import org.babbly.ui.gui.controller.PrimaryWindowController;
 import org.babbly.ui.gui.settings.SettingsLoader;
 import org.babbly.ui.gui.view.PrimaryWindow;
-
-import sun.security.krb5.Config;
 
 /**
  * The MAIN Class. It just sets the default look and feel to the System's look
@@ -43,7 +41,7 @@ public class Main {
 		//new Main();
 		final Properties properties = SettingsLoader.loadProperties("babbly.properties");
 		System.out.println("root path is: "+System.getProperty("user.dir"));
-		Configurator.setProperties(properties);
+		Conf.setProperties(properties);
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException e) {

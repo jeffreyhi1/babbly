@@ -15,23 +15,36 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *   
  */
-package org.babbly.core.protocol.sip;
+package org.babbly.core.protocol.sip.registration;
 
-/**
- * @author Georgi Dimitrov
- * @version 0.2
- */
-public interface SipClientListener {
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class RegistrationScheduler{
+
+	private SipRegistration registration = null;
+	private Timer timer = new Timer(true);
 	
-	enum Error{WRONG_PASSWORD, INVALID_ADDR, CONNECTION_TIMEOUT, BUSY, REFUSED}
+	public RegistrationScheduler(SipRegistration registration){
+		this.registration = registration;
+	}
 	
-	public void onLogin();
 	
-	public void onLoginAuth();
+	public void start(long time){
+		// the timer works with milliseconds therefore multiply the time by 1000
+		timer.schedule(new KeepRegistrationTask(), time*1000);
+	}
 	
-	public void onError(Error error);
+	public void shutdown(){
+		timer.cancel();
+	}
 	
-	public void onLogout();
-	
-	public void onConnecting();
+
+	private class KeepRegistrationTask extends TimerTask{
+		@Override
+		public void run() {
+			registration.register();
+		}
+
+	}
 }

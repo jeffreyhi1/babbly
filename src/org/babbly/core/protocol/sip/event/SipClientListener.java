@@ -15,33 +15,23 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *   
  */
-package org.babbly.core.protocol.sip;
-
-
+package org.babbly.core.protocol.sip.event;
 
 /**
- * This interface serves the purpose of handling all possible feedback messages
- * which are meant for the end user to receive in order for the program to
- * provide that user with comprehensive understanding for itself and the actions
- * it is
- * taking.
- * 
- * @author Georgi Dimitrov (MrJ)
- *
+ * @author Georgi Dimitrov
+ * @version 0.3
  */
-public interface FeedbackListener {
+public interface SipClientListener {
 	
+	enum Error{WRONG_PASSWORD, INVALID_ADDR, CONNECTION_TIMEOUT, BUSY, REFUSED}
 	
-	/**
-	 * Received by the <code>FeedbackListener</code> when the user has to be 
-	 * informed about specific actions that are being currently taken or when
-	 * user interrogation is needed.
-	 * 
-	 * @param string
-	 */
-	public void onFeedbackMessage(String string);
+	public void onLogin();
 	
+	public void onLoginAuth();
 	
+	public void onError(Error error);
 	
-
+	public void onLogout();
+	
+	public void onConnecting();
 }

@@ -15,13 +15,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *   
  */
-package org.babbly.core.protocol.sip;
+package org.babbly.core.protocol.sip.registration;
 
 import java.net.InetSocketAddress;
 import java.text.ParseException;
 import java.util.ListIterator;
-import java.util.TooManyListenersException;
+import java.util.Observable;
 
+import javax.imageio.spi.RegisterableService;
 import javax.sip.ClientTransaction;
 import javax.sip.InvalidArgumentException;
 import javax.sip.SipException;
@@ -43,7 +44,12 @@ import javax.sip.header.WWWAuthenticateHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 
+import org.babbly.core.config.Conf;
+import org.babbly.core.config.Property;
 import org.babbly.core.net.InetAddresResolver;
+import org.babbly.core.protocol.sip.SipManager;
+import org.babbly.core.protocol.sip.SipUser;
+import org.babbly.core.protocol.sip.event.SipObservable;
 
 
 
@@ -52,62 +58,33 @@ import org.babbly.core.net.InetAddresResolver;
  * @author Georgi Dimitrov (MrJ)
  * @version 0.3 - 29/01/2010
  */
-public class SipRegistration {
+public class SipRegistration extends SipObservable<RegistrationState> {
 
-	private static final int DEFAULT_EXPIRE_TIME = 3600;
-
-	private SipUser user = null; 
 	private SipManager manager = null;
 
-//	private int CSeqValue = 1;
-//	private long lasttimeRegister = 0;
-
-	RegistrationScheduler registrationScheduler = null;
-	Request authRequest = null;
-	RegisterState registerState = RegisterState.UNSPECIFIED;
-	//	HashMap<SipUser, String> map = new HashMap<SipUser, String>();
-
-	private SipClientListener listener = null;
-
-
-
-	/**
-	 * @param manager
-	 */
-	public SipRegistration(SipManager manager, SipClientListener listener){
-		this.manager = manager;
-		this.listener = listener;
-		registrationScheduler = new RegistrationScheduler(this);
-
-		try {
-			manager.getSipProvider().addSipListener(
-					new SipRegistrationtListener(this, listener));
-		} catch (TooManyListenersException e) {
-			e.printStackTrace();
-		}
+	private int expires;
+	private Request authRequest;
+	private SipUser user;
+	private RegistrationScheduler scheduler;
+	private RegistrationState state = RegistrationState.UNREGISTERED;
+	
+	public SipRegistration(SipManager manager){
+		
+		this.manager = manager; 
+		expires = Integer.parseInt(Conf.get(Property.SIP_REQ_EXPIRE));
 	}
 
-
-	/**
-	 * @param user
-	 */
 	public void register(SipUser user){
+		this.setState(RegistrationState.REGISTERING);
 		this.user = user;
 		String username = user.getUsername();
 		String hostname = user.getHostname();
 		String displayName = user.getScreenname();
 
-		if(registerState == RegisterState.UNSPECIFIED || 
-				registerState == RegisterState.UNREGISTERED){
-			registerState = RegisterState.REGISTERING;
-		}
-		else{
-			//this.setRegisterState(RegisterState.)
-		}
-
 		FromHeader fromHeader = null;
 		ToHeader toHeader = null;
 		CSeqHeader cSeq = null;
+
 
 		try {
 			fromHeader = manager.createFromHeader(username, hostname, displayName);
@@ -122,10 +99,11 @@ public class SipRegistration {
 
 		CallIdHeader callIdHeader = manager.createNewCallId();
 
-		InetSocketAddress publicAddress = InetAddresResolver.getPublicAddress(manager.getPort());
+		InetSocketAddress publicAddress = 
+			InetAddresResolver.getPublicAddress(InetAddresResolver.getRandomPortNumber());
 
-		String publicIP = publicAddress.getHostName();
-		int publicPort = publicAddress.getPort();
+		String publicIP = publicAddress.getAddress().getHostAddress();
+		int publicPort = manager.getPort();
 		String protocol = manager.getProtocol();
 
 		manager.newViaHeaders();
@@ -171,9 +149,9 @@ public class SipRegistration {
 		//Expires Header
 		ExpiresHeader expHeader = null;
 		try {
-			expHeader = manager.createExpiresHeader(DEFAULT_EXPIRE_TIME);
+			expHeader = manager.createExpiresHeader(expires);
+			//TODO: DEFAULT_EXPIRE_TIME??? 
 		} catch (InvalidArgumentException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -195,8 +173,7 @@ public class SipRegistration {
 
 		Address contactAddress = manager.createAddress(contactURI);
 
-		if (user.getScreenname() != null)
-		{
+		if (user.getScreenname() != null) {
 			try {
 				contactAddress.setDisplayName(user.getScreenname());
 			} catch (ParseException e) {
@@ -209,7 +186,7 @@ public class SipRegistration {
 
 		//add expires in the contact header as well in any case
 		try {
-			contactHeader.setExpires(DEFAULT_EXPIRE_TIME);
+			contactHeader.setExpires(expires);
 		} catch (InvalidArgumentException e) {
 			e.printStackTrace();
 		}
@@ -229,30 +206,21 @@ public class SipRegistration {
 		} catch (SipException e) {
 			e.printStackTrace();
 		}
-		System.out.println("-Request.REGISTER- send!");
-//		lasttimeRegister = System.currentTimeMillis();
+		System.out.println("-Request send: "+request);
 	}
 
-	public void register(String destination, SipUser user){
-
+	public void register() {
+		this.register(user);
 	}
 
-
-	/**
-	 * @param response
-	 * @param transaction
-	 */
 	@SuppressWarnings("unchecked")
 	public void authorize(Response response, ClientTransaction transaction){
-
-		registerState = RegisterState.AUTHENTICATING;
+		//this.setState(RegistrationState.AUTHENTICATING);
 
 		int respStatusCode = response.getStatusCode();
-
 		//String branchID = transaction.getBranchId();
-
 		authRequest = (Request) transaction.getRequest().clone();
-
+		
 		ListIterator<WWWAuthenticateHeader> authHeaders = null;
 
 		if (respStatusCode == Response.UNAUTHORIZED){
@@ -261,18 +229,17 @@ public class SipRegistration {
 		else if (respStatusCode == Response.PROXY_AUTHENTICATION_REQUIRED){
 			authHeaders = response.getHeaders(ProxyAuthenticateHeader.NAME);
 		}
-
 		//TODO: What if no authentication headers has been specified ?
 
 		ViaHeader viaHeader = (ViaHeader) authRequest.getHeader(ViaHeader.NAME);
 		authRequest.removeHeader(ViaHeader.NAME);
-
 		ViaHeader refreshedViaHeader = null;
 
 		try {
 			refreshedViaHeader = manager.createViaheader(
 					viaHeader.getHost(), viaHeader.getPort(),
 					viaHeader.getTransport(), null);
+			//TODO: try to clone and remove branch instead!
 		} catch (ParseException e2) {
 			e2.printStackTrace();
 		} catch (InvalidArgumentException e2) {
@@ -292,8 +259,7 @@ public class SipRegistration {
 
 		ClientTransaction reRegisterTransaction = null;
 		try {
-			reRegisterTransaction = 
-				manager.createNewClientTransaction(authRequest);
+			reRegisterTransaction = manager.createNewClientTransaction(authRequest);
 		} catch (TransactionUnavailableException e) {
 			e.printStackTrace();
 		}
@@ -305,16 +271,15 @@ public class SipRegistration {
 			authHeader = (WWWAuthenticateHeader) authHeaders.next();
 			String realm = authHeader.getRealm();
 
-			AuthorizationHeader authorization = manager.createAuthorizationHeader(
-					authRequest, authHeader, user);
+			AuthorizationHeader authorization = 
+				manager.createAuthorizationHeader(authRequest, authHeader, user);
 
 			//			CallIdHeader call = (CallIdHeader)reoriginatedRequest
 			//			.getHeader(CallIdHeader.NAME);
-
 			authRequest.addHeader(authorization);
-
 			//updateRegisterSequenceNumber(retryTran);
 
+			System.out.println(authRequest);
 			try {
 				reRegisterTransaction.sendRequest();
 			} catch (SipException e) {
@@ -323,15 +288,30 @@ public class SipRegistration {
 			}			
 		}
 	}
+	
+	public void keepAlive(Response response) {
+		scheduler = new RegistrationScheduler(this);
+		
+		ExpiresHeader expiresHeader = response.getExpires();
+		ContactHeader contactHeader = (ContactHeader) response
+		.getHeader(ContactHeader.NAME);
+		
+		if (expiresHeader != null)
+			expires = expiresHeader.getExpires();
+		else if(contactHeader != null){
+			expires = contactHeader.getExpires();
+		}
+		scheduler.start(expires/2);
+	}
 
 	public void unregister(){
-
+		this.setState(RegistrationState.UNREGISTERING);
+		
 		Request unregister = (Request) authRequest.clone();
 
 		try{
 			unregister.getExpires().setExpires(0);
 			manager.incrementCSeq(unregister);
-
 
 			ViaHeader viaHeader
 			= (ViaHeader)unregister.getHeader(ViaHeader.NAME);
@@ -361,7 +341,7 @@ public class SipRegistration {
 		//			unregisterRequest.addHeader(authorization);
 
 		ClientTransaction transaction = null;
-
+		System.out.println(unregister);
 		try {
 			transaction = manager.createNewClientTransaction(unregister);
 		} catch (TransactionUnavailableException e) {
@@ -372,32 +352,16 @@ public class SipRegistration {
 		} catch (SipException e) {
 			e.printStackTrace();
 		}
-
-		this.setRegisterState(RegisterState.UNREGISTERING);
+		scheduler.shutdown();
+	}
+	
+	public RegistrationState getState() {
+		return state;
 	}
 
-	public void keepRegistrationAlive(long ms){
-		this.setRegisterState(RegisterState.REGISTERED);
-		registrationScheduler.scheduleRegister(ms);
-	}
-
-
-	public SipManager getSipManager(){
-		return manager;
-	}
-
-	public SipUser getSipUser(){
-		return user;
-	}
-
-
-	public RegisterState getRegisterState() {
-		return registerState;
-	}
-
-
-	public void setRegisterState(RegisterState registerState) {
-		this.registerState = registerState;
+	public void setState(RegistrationState state) {
+		this.state = state;
+		notifyObservers(state);
 	}
 
 }

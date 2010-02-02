@@ -24,25 +24,17 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.net.InetAddress;
 import java.util.Properties;
 
-import javax.sip.InvalidArgumentException;
-import javax.sip.ObjectInUseException;
-import javax.sip.PeerUnavailableException;
-import javax.sip.TransportNotSupportedException;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
-import org.babbly.core.config.Configurator;
-import org.babbly.core.config.Property;
-import org.babbly.core.net.InetAddresResolver;
-import org.babbly.core.protocol.sip.SipClientListener;
+import org.babbly.core.protocol.sip.SipClient;
 import org.babbly.core.protocol.sip.SipManager;
-import org.babbly.core.protocol.sip.SipRegistration;
 import org.babbly.core.protocol.sip.SipUser;
+import org.babbly.core.protocol.sip.event.SipClientListener;
 import org.babbly.ui.gui.settings.Options;
 import org.babbly.ui.gui.settings.SettingsLoader;
 import org.babbly.ui.gui.view.OptionsWindow;
@@ -68,7 +60,7 @@ public class PrimaryWindowController implements SipClientListener {
 	int busyIconIndex = 0;
 	static Icon idleIcon = new ImageIcon("image/status_icons/idle-icon.png");
 
-	private SipRegistration registration = null;
+	private SipClient client = null;
 
 	private static final int DEFAULT_LISTENING_PORT = 6060;
 	private static final String DEFAULT_TRANSPORT_PROTOCOL = "UDP";
@@ -106,13 +98,15 @@ public class PrimaryWindowController implements SipClientListener {
 		// this is important since it creates a new properties file,
 		// in case there was not such one, and saves it for further use
 
-		primaryWindow.setTitle("gogosip client");
+		primaryWindow.setTitle("babbly");
 
 		optionsWindowController = new OptionsWindowController(
 				new OptionsWindow(primaryWindow, "Options"), options);
 		primaryWindow.setLocationRelativeTo(null);
 
-		this.primaryWindow.setVisible(true);
+		primaryWindow.setVisible(true);
+		
+		primaryWindow.getLoginPane().getPasswordField().setEnabled(true);
 
 		primaryWindow.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
@@ -141,30 +135,8 @@ public class PrimaryWindowController implements SipClientListener {
 		primaryWindow.getLoginPane().getLoginButton().setEnabled(false);
 		primaryWindow.getStatusBarPane().setVisible(false);
 		primaryWindow.getLoginPane().getPasswordField().setEnabled(false);
-
-		int listenPort = options.getListenPort();
-		String protocol = options.getNetworkProtocol();
-
-
-		InetAddress addr = InetAddresResolver.resolveInternetInterface();
-		String ip = addr.getHostAddress();
 		
-		try {
-			manager = new SipManager(ip, listenPort, protocol);
-		} catch (PeerUnavailableException e1) {
-			// LOG THIS ISSUE IF IT OCCURS!
-			e1.printStackTrace();
-		} catch (ObjectInUseException e) {
-			// LOG THIS ISSUE IF IT OCCURS!
-			e.printStackTrace();
-		} catch (TransportNotSupportedException e) {
-			// this will never happen
-		} catch (InvalidArgumentException e) {
-			// neither will this
-		}
-		if (manager != null) {
-			registration = new SipRegistration(manager, this);
-		}
+		client = new SipClient(this);
 
 		System.out.println("Sip manager = " + manager);
 		initStatusBarAnimation();
@@ -201,11 +173,9 @@ public class PrimaryWindowController implements SipClientListener {
 					}
 				});
 
-
-
-		primaryWindow.getLoginPane().getUsernameField().setText("mrjbg@iptel.org");
-		primaryWindow.getLoginPane().getPasswordField().setText("mrjbgiptel");
 		primaryWindow.getLoginPane().getLoginButton().setEnabled(true);
+		primaryWindow.getLoginPane().getLoginButton().setEnabled(true);
+		primaryWindow.getLoginPane().getPasswordField().setEnabled(true);
 
 	}
 
@@ -276,8 +246,8 @@ public class PrimaryWindowController implements SipClientListener {
 
 				primaryWindow.getStatusTextLabel().setText(
 				"Proceeding with registration...");
-
-				registration.register(callee);
+				
+				client.login(callee);
 			}
 
 		});
@@ -286,7 +256,7 @@ public class PrimaryWindowController implements SipClientListener {
 	}
 
 	private void logoutMenuItemActionPerformed(ActionEvent e) {
-		registration.unregister();
+		client.logout();
 		statusMessage("Disconnecting...");
 		statusRunning(true);
 	}
@@ -374,7 +344,7 @@ public class PrimaryWindowController implements SipClientListener {
 
 		cardLayout.show(primaryWindow.getCardPane(), "card2");
 	}
-	
+
 	@Override
 	public void onConnecting() {
 		// TODO Auto-generated method stub
@@ -383,18 +353,15 @@ public class PrimaryWindowController implements SipClientListener {
 
 	@Override
 	public void onError(Error error) {
+		loginEnabled(true);
+		statusRunning(false);
+		statusMessage("Not Connected");
 		switch(error){
 		case WRONG_PASSWORD:
 			feedbackMessage("Wrong password!");
-			loginEnabled(true);
-			statusRunning(false);
-			statusMessage("Not Connected");
 			break;
 		case INVALID_ADDR:
 			feedbackMessage("Unknown Server Address");
-			loginEnabled(true);
-			statusRunning(false);
-			statusMessage("Not Connected");
 			break;
 		default:
 			;
@@ -403,22 +370,23 @@ public class PrimaryWindowController implements SipClientListener {
 
 	@Override
 	public void onLogin() {
-		// TODO Auto-generated method stub
-
+		statusMessage("Connected");
+		statusRunning(false);
+		showCallPane();
 	}
 
 	@Override
 	public void onLoginAuth() {
-		statusMessage("Connected");
-		statusRunning(false);
-		showCallPane();
+		System.out.println("onLoginAuth");
 
 	}
 
 	@Override
 	public void onLogout() {
-		// TODO Auto-generated method stub
-
+		statusMessage("Not Connected");
+		statusRunning(false);
+		showLoginPane();
+		loginEnabled(true);
 	}
 
 }

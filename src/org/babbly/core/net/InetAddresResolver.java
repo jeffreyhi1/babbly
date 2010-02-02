@@ -11,7 +11,7 @@ import java.util.Random;
 import net.java.stun4j.StunAddress;
 import net.java.stun4j.client.SimpleAddressDetector;
 
-import org.babbly.core.config.Configurator;
+import org.babbly.core.config.Conf;
 import org.babbly.core.config.Property;
 import org.babbly.core.util.AppLog;
 
@@ -37,6 +37,8 @@ public class InetAddresResolver {
 	public static final int    MIN_PORT_NUMBER = 1024;
 
 	private static DatagramSocket socket = null;
+
+	private static SimpleAddressDetector detector;
 
 	static{
 		socket = initRandomPortSocket();
@@ -65,7 +67,7 @@ public class InetAddresResolver {
 			//log: no destination specified, using default destination +
 			// Configurator.get(Property.RESOLV_DEST_DEFAULT)
 			try {
-				dest = InetAddress.getByName(Configurator.get(Property.RESOLV_DEST));
+				dest = InetAddress.getByName(Conf.get(Property.RESOLV_DEST));
 			} catch (UnknownHostException e) {
 				//log: could not resolve destination + 
 				// Configurator.get(Property.RESOLV_DEST_DEFAULT)
@@ -103,7 +105,7 @@ public class InetAddresResolver {
 
 		DatagramSocket socket = null;
 
-		String bindRetriesProperty = Configurator.get(Property.BIND_RETRIES);
+		String bindRetriesProperty = Conf.get(Property.BIND_RETRIES);
 
 		int bindRetries = Integer.parseInt(bindRetriesProperty);
 
@@ -145,16 +147,17 @@ public class InetAddresResolver {
 
 
 	public static InetSocketAddress getPublicAddress(int localPort){
-
+		
 		InetSocketAddress resolvedAddr = null;
-
-		String stunAddressStr = Configurator.get(Property.STUN_ADDRESS);
-		String portStr = Configurator.get(Property.STUN_PORT);
+		
+		
+		String stunAddressStr = Conf.get(Property.STUN_ADDRESS);
+		String portStr = Conf.get(Property.STUN_PORT);
 		int stunPort = Integer.parseInt(portStr);
 
 		StunAddress stunAddr = new StunAddress(stunAddressStr, stunPort);
 
-		SimpleAddressDetector detector = new SimpleAddressDetector(stunAddr);
+		detector = new SimpleAddressDetector(stunAddr);
 
 		logger.debug("Created a STUN Address detector for the following "
 				+ "STUN server: " + stunAddressStr + ":" + stunPort);
@@ -162,14 +165,14 @@ public class InetAddresResolver {
 		detector.start();
 		logger.debug("STUN server detector started;");
 
-
+		
 		//----------------------------------------------------------------------
 		StunAddress mappedAddress = null;
 		try {
 			mappedAddress = detector.getMappingFor(localPort);
 		} catch (IOException e) {
 			// log: failed to bind
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		//----------------------------------------------------------------------
 		System.out.println("lala");
@@ -178,7 +181,7 @@ public class InetAddresResolver {
 			resolvedAddr = mappedAddress.getSocketAddress();
 		}
 		else{
-			String dstProperty = Configurator.get(Property.RESOLV_DEST);
+			String dstProperty = Conf.get(Property.RESOLV_DEST);
 			InetAddress destination = null;
 			try {
 				destination = InetAddress.getByName(dstProperty);
