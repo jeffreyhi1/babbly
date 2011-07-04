@@ -1,7 +1,7 @@
 /*  babbly - lightweight instant messaging and VoIP client written in Java. 
  * 
  *
- *  Copyright (C) 2008  Georgi Dimitrov  mrj[at]abv[dot]bg
+ *  Copyright (C) 2010  Georgi Dimitrov  mrj[at]abv[dot]bg
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,6 +55,10 @@ import java.security.NoSuchAlgorithmException;
  *</code>
  *</pre>
  * 
+ * @author Georgi Dimitrov (g.dimitrov@mail.com)
+ *
+ */
+/**
  * @author Georgi Dimitrov (MrJ)
  *
  */
@@ -63,16 +67,33 @@ public class DigestAlgorithm {
 
 //	public static enum Method{Digest};
 
+	/**
+	 * An enumeration class to contain all of the possible MD5 options, which
+	 * are applicable for the used auth algorithm.
+	 * 
+	 * @author Georgi Dimitrov (g.dimitrov@mail.com)
+	 *
+	 */
 	public enum Algorithm{
 
 		MD5("MD5"), MD5Session("MD5-sess");
 
+		/**
+		 * The textual representation for the <code>Algorithm</code>
+		 *  enumeration.
+		 */
 		String text = null;
 
+		/**
+		 * Constructs the <code>Algorithm</code> enumeration and assigns the 
+		 * given text to its <code>text</code> field.
+		 * 
+		 * @param text the text information to assign to the instance of this
+		 * enumeration. 
+		 */
 		Algorithm(String text){
 			this.text = text;
 		}
-
 	};
 	
 	public enum QOP{
@@ -87,20 +108,41 @@ public class DigestAlgorithm {
 
 	};
 
+	/** The used authentication algorithm */
 	private Algorithm algorithm = Algorithm.MD5;
+	
+	/** The used authentication method */
 	private String method = null;
+	
+	/** The grade on quality of protection (QOP) */
 	private QOP qop = QOP.unspecified;
 	
+	
+	/** The client nonce parameter */
 	private String cnonce = null;
+	
+	/** The request counter */
 	private String nc = null;
 
 
+	/** Stores the user's username */
 	private String username = null;
+	
+	/** Stores the user's password */
 	private String password = null;
+	
+	/** An additional field used to store the authentication realm */
 	private String realm = null;
+	
+	/**
+	 * A randomly generated value by the server, for one time use only
+	 */
 	private String nonce = null;
 	
+	/** The body of the digest algorithm */
 	private String body = null;
+	
+	/** The body of the digest algorithm */
 	private String digestURI = null;
 	
 
@@ -118,14 +160,15 @@ public class DigestAlgorithm {
 	/**
 	 * Fast convert a byte array to a hex string with possible leading zero.
 	 * <p>
-	 * <b>Note: </b>This code was seen on: 
+	 * <b>Note: </b>The code for this method was seen on: 
 	 * 
 	 * {@link}http://mindprod.com/jgloss/hex.html
 	 * 
 	 * @param b the byte array that is going to be converted into its hex value.
+	 * 
 	 * @return the hex value of the given byte array.
 	 */
-	public static String toHexString ( byte[] b ){
+	public static String toHexString (byte[] b){
 		StringBuffer sb = new StringBuffer(b.length * 2);
 
 		for ( int i=0; i<b.length; i++ ){
@@ -140,18 +183,18 @@ public class DigestAlgorithm {
 
 	/**
 	 * Takes as input parameters that are two types of data. The first one is
-	 * the user's credentials and the second is the data received from
-	 * the server within the Authentication header of the response. 
+	 * containing the user's credentials and the second is the data received 
+	 * from the server within the Authentication header of the response. 
 	 * Having that data the <code>computeDigest</code> method generates a valid 
 	 * digest response that will be included in an Authorization header within a
 	 * REGISTER request.
 	 * <p>
 	 * <b>Note: </b> This method is compliant with rfc2617.
 	 * 
-	 * @param username
-	 * @param password
-	 * @param realm
-	 * @param nonce
+	 * @param username the username of the current user
+	 * @param password the password for the given username
+	 * @param realm the authentication realm
+	 * @param nonce the 
 	 * @param method
 	 * @param digestURI
 	 * @param body
