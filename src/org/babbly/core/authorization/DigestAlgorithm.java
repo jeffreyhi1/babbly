@@ -72,7 +72,6 @@ public class DigestAlgorithm {
 	 * are applicable for the used auth algorithm.
 	 * 
 	 * @author Georgi Dimitrov (g.dimitrov@mail.com)
-	 *
 	 */
 	public enum Algorithm{
 
@@ -96,6 +95,13 @@ public class DigestAlgorithm {
 		}
 	};
 	
+	/**
+	 * An enumeration class to represent the grade on quality of protection 
+	 * (QOP). Possible options are <code>auth</code>, <code>authint</code> and
+	 * <code>unspecified</code>.
+	 * 
+	 * @author Georgi Dimitrov (g.dimitrov@mail.com)
+	 */
 	public enum QOP{
 
 		auth("auth"), authint("auth-int"), unspecified(null);
@@ -194,10 +200,10 @@ public class DigestAlgorithm {
 	 * @param username the username of the current user
 	 * @param password the password for the given username
 	 * @param realm the authentication realm
-	 * @param nonce the 
-	 * @param method
-	 * @param digestURI
-	 * @param body
+	 * @param nonce randomly, one time use generated value by the server 
+	 * @param method the method of the authentication algorithm
+	 * @param digestURI the URI of the digest algorithm
+	 * @param body the body e.g. the content, may be empty, null or vice versa
 	 */
 	public DigestAlgorithm(String username, String password, String realm,
 			String nonce, String method, String digestURI, String body) 
@@ -256,9 +262,8 @@ public class DigestAlgorithm {
 	}
 
 
-	/**
-	 * @return
-	 */
+	
+	// A private helper method to compute the value of the KD key
 	private String kd(String secret, String data){
 		return h(secret + ":" + data);
 	}
@@ -315,10 +320,26 @@ public class DigestAlgorithm {
 		}
 	}
 
+	/**
+	 * Checks whether there is a supplied quality of protection (QOP) property.
+	 * 
+	 * @return <code>true</code> if a QOP property has been supplied, 
+	 * <code>false</code> otherwise.
+	 */
 	public boolean isSuppliedQop() {
-		return  qop != null && qop != QOP.unspecified;
+		return qop != null && qop != QOP.unspecified;
 	}
 
+	/**
+	 * Sets a value for the quality of protection (QOP) property.
+	 * 
+	 * @param qop the new value for the QOP property
+	 * @param cnonce the value of the client nonce
+	 * @param nc the value of the request counter
+	 * 
+	 * @throws IllegalArgumentException if the given request counter (nc) is
+	 * null.
+	 */
 	public void setQop(QOP qop, String cnonce, String nc) 
 	throws IllegalArgumentException {
 		if(cnonce == null){
@@ -334,18 +355,38 @@ public class DigestAlgorithm {
 		this.nc = nc;
 	}
 	
+	/**
+	 * Sets the algorithm of choice for the digest authentication
+	 * 
+	 * @param algorithm the algorithm to use for the authentication
+	 */
 	public void setAlgorithm(Algorithm algorithm){
 		this.algorithm = algorithm;
 	}
 
+	/**
+	 * Gets the value of the quality of protection property (QOP)
+	 * 
+	 * @return the value of the QOPproperty
+	 */
 	public QOP getQop() {
 		return qop;
 	}
 
+	/**
+	 * Gets the value of the client nonce (cnonce) property
+	 * 
+	 * @return the value of the cnonce property
+	 */
 	public String getCnonce() {
 		return cnonce;
 	}
 
+	/**
+	 * Gets the value of the request counter (nc) property
+	 * 
+	 * @return the value of the nc property
+	 */
 	public String getNc() {
 		return nc;
 	}
