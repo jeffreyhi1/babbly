@@ -1,6 +1,5 @@
-/*  babbly - lightweight instant messaging and VoIP client written in Java. 
- * 
- *  Copyright (C) 2008  Georgi Dimitrov  mrj[at]abv[dot]bg
+/*
+ *  Copyright (C) 2010 Georgi Dimitrov  g.dimitrov[at]mail[dot]com
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +27,19 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.PropertyConfigurator;
 
 
-
+/**
+ * A convinient logging mechanism that incorporates the functionality of the 
+ * famous Apache Log4j Java library. This class provides an accessible central 
+ * logging point for the application. This makes logging a breeze and a sealess
+ * experience. 
+ * 
+ * <b>Note:</b>
+ * You need to include the Log4j library (e.g. log4j-1.2.8.jar or above) into
+ * your application's classpath in order for this class to compile.
+ * 
+ * @author Georgi Dimitrov (g.dimitrov@mail.com)
+ *
+ */
 public class AppLog {
 
 
@@ -40,7 +51,7 @@ public class AppLog {
 	/**
 	 * Specifies whether the logging calls are to be proceeded or dropped.  
 	 */
-	private boolean isDEBUG = true;
+	private boolean debug = true;
 
 	/**
 	 * A default name of the logging file. 
@@ -76,8 +87,6 @@ public class AppLog {
 	// a static constructor that is invoked the first time the logger is called.
 	static{
 		
-		System.out.println(Logger.getRootLogger().getAllAppenders());
-
 		// Don't panic here we just check if we have RW access to the file 
 		// system or if a file named "gogosip.log" already exists
 		File loggingDir = new File(DEFAULT_LOGGING_DIRECTORY);
@@ -159,7 +168,7 @@ public class AppLog {
 	}
 
 	/**
-	 * Log the object message in info level.
+	 * Logs the given <code>Object</code> message at level INFO.
 	 * 
 	 * @param msg the message to log.
 	 */
@@ -167,36 +176,94 @@ public class AppLog {
 		log(logger.getName(), Level.INFO, msg, null);
 	}
 	
+	/**
+	 * Logs the given <code>Object</code> message at level INFO.
+	 * 
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
 	public void info(Object msg, Throwable t){
 		log(logger.getName(), Level.INFO, msg, t);
 	}
 
+	/**
+	 * Logs the given <code>Object</code> message at level WARN.
+	 * 
+	 * @param msg the message to log.
+	 */
 	public void warn(Object msg){
 		log(logger.getName(), Level.WARN, msg, null);
 	}
 	
+	/**
+	 * Logs the given <code>Object</code> message at level WARN.
+	 * 
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
 	public void warn(Object msg, Throwable t){
 		log(logger.getName(), Level.WARN, msg, t);
 	}
 
+	/**
+	 * Logs the given <code>Object</code> message at level ERROR.
+	 * 
+	 * @param msg the message to log.
+	 */
 	public void error(Object msg){
 		log(logger.getName(), Level.ERROR, msg, null);
 	}
 	
+	/**
+	 * Logs the given <code>Object</code> message at level ERROR.
+	 * 
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
 	public void error(Object msg, Throwable t){
 		log(logger.getName(), Level.ERROR, msg, t);
 	}
 
+	/**
+	 * Logs the given <code>Object</code> message at level FATAL.
+	 * 
+	 * @param msg the message to log.
+	 */
 	public void fatal(Object msg){
 		log(logger.getName(), Level.FATAL, msg, null);
 	}
 	
+	/**
+	 * Logs the given <code>Object</code> message at level FATAL.
+	 * 
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
 	public void fatal(Object msg, Throwable t){
 		log(logger.getName(), Level.FATAL, msg, t);
 	}
 	
+	/**
+	 * Logs the given <code>Object</code> message at level FATAL.
+	 * 
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
+	
+	/**
+	 * @param FQCN The fully qualified class name for the wrapper class.
+	 * @param level The level to log onto (DEBUG, INFO, WARN, ERROR, FATAL)
+	 * @param msg the message to log.
+	 * @param t The <code>Throwable</code> object of the logging request, 
+	 * 			may be <code>null</code>
+	 */
 	private void log(String FQCN, Level level, Object msg, Throwable t){
-		if(isDEBUG){
+		if(debug){
 			logger.log(FQCN, level, msg, t);	
 		}
 	}
@@ -237,12 +304,22 @@ public class AppLog {
 	}
 
 
-	public void setDEBUG(boolean isDEBUG) {
-		this.isDEBUG = isDEBUG;
+	/**
+	 * Sets the value for the <code>isDebug</code> property of the logger.
+	 * 
+	 * @param debug the new value for the <code>isDebug</code> property.
+	 */
+	public void setDebug(boolean debug) {
+		this.debug = debug;
 	}
 
 
-	public boolean isDEBUG() {
-		return isDEBUG;
+	/**
+	 * Gets the current value of the <code>isDebug</code> property.
+	 * 
+	 * @return the value of the <code>isDebug</code> property
+	 */
+	public boolean debug() {
+		return debug;
 	}		
 }
